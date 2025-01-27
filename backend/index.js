@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const { checkScheduleAndNotify } = require('./services/AttendenceTracker.js');
 
 const subjectRoutes = require("./routes/subjectRoutes.js");
 const attendanceRoutes = require("./routes/attendanceRoutes");
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/attendance", attendanceRoutes);
+setInterval(checkScheduleAndNotify, 60000);
 
 mongoose
   .connect(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true })
