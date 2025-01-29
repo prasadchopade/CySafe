@@ -18,7 +18,7 @@ const AttendanceScreen = () => {
           console.error('No subject ID provided');
           return;
         }
-        const response = await axios.get(`${url}/api/attendance?subjectId=${subjectId}`);
+        const response = await axios.get(`https://192.168.73.233/api/attendance?subjectId=${subjectId}`);
         setAttendanceRecords(response.data);
         console.log('Attendance fetched:', response.data);
 
