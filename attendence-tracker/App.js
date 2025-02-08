@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import { registerForPushNotificationsAsync, configureNotifications } from "./utils/notificationUtils";
 import { Slot } from "expo-router";
-import { ThemeProvider } from "@rneui/themed";
-import * as Notifications from "expo-notifications"; // Ensure this is imported
 
 export default function App() {
   useEffect(() => {
@@ -22,9 +20,5 @@ export default function App() {
     return () => subscription.remove();
   }, []);
 
-  return (
-    <ThemeProvider>
-      <Slot />
-    </ThemeProvider>
-  );
+  return <Slot />;
 }
