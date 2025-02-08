@@ -11,7 +11,7 @@ const SubjectList = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
-        const response = await axios.get(`http://192.168.73.233:5000/api/subjects`);
+        const response = await axios.get(`http://10.10.61.7:5000/api/subjects`);
         setSubjects(response.data);
         console.log("Subjects fetched:", response.data);
       } catch (error) {

@@ -28,7 +28,7 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Attendance Tracker</Text>
+      <Text style={styles.title}>Welcome to CySafe</Text>
       <Button title="Go to Dashboard" onPress={() => router.push("/dashboard")} />
     </View>
   );
