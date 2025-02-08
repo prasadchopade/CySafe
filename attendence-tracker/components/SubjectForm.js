@@ -1,193 +1,216 @@
-// import React, { useState } from "react";
-// import { View, Text, TextInput, Button, StyleSheet, ScrollView } from "react-native";
-// import { Picker } from "@react-native-picker/picker";
-// import axios from "axios";
+// Ride.js
+import React, { useEffect, useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  Button,
+  Alert,
+  ActivityIndicator,
+  Image
+} from 'react-native';
+import MapView, { Marker, UrlTile, Polyline } from 'react-native-maps';
+import * as Location from 'expo-location';
 
-// const SubjectForm = () => {
-//   const [name, setName] = useState("");
-//   const [locationName, setLocationName] = useState("");
-//   const [coordinates, setCoordinates] = useState({ latitude: "", longitude: "" });
-//   const [schedule, setSchedule] = useState([{ day: "Monday", time: "" }]);
+// EXAMPLE: Pothole data from your DB
+const POTHOLES_DB = [
+  { id: 1, latitude: 20.595, longitude: 78.965 },
+  { id: 2, latitude: 20.596, longitude: 78.969 },
+  { id: 3, latitude: 19.1255, longitude: 72.8531 },
+];
 
-//   const handleScheduleChange = (index, field, value) => {
-//     const updatedSchedule = [...schedule];
-//     updatedSchedule[index][field] = value;
-//     setSchedule(updatedSchedule);
-//   };
+// You might want a haversine distance library, but let's do a quick approximation
+function getDistanceLatLng(lat1, lng1, lat2, lng2) {
+  // returns approximate distance in meters using the haversine formula
+  const R = 6371e3; // Earth radius in meters
+  const toRad = (x) => (x * Math.PI) / 180;
 
-//   const addSchedule = () => {
-//     setSchedule([...schedule, { day: "Monday", time: "" }]);
-//   };
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lng2 - lng1);
 
-//   const handleSubmit = async () => {
-//     try {
-//       console.log({
-//         name,
-//         locationName,
-//         coordinates,
-//         schedule,
-//       });
-//       const response = await axios.post(`http://192.168.73.233:5000/api/subjects/create`, {
-//         name,
-//         locationName,
-//         coordinates,
-//         schedule,
-//       });
-//       console.log("Subject created:", response.data);
-//     } catch (error) {
-//       console.error("Error creating subject:", error);
-//     }
-//   };
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
 
-//   return (
-//     <ScrollView contentContainerStyle={styles.container}>
-//       <Text style={styles.label}>Name:</Text>
-//       <TextInput
-//         style={styles.input}
-//         value={name}
-//         onChangeText={setName}
-//         placeholder="Enter subject name"
-//       />
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-//       <Text style={styles.label}>Location Name:</Text>
-//       <TextInput
-//         style={styles.input}
-//         value={locationName}
-//         onChangeText={setLocationName}
-//         placeholder="Enter location name"
-//       />
-
-//       <Text style={styles.label}>Latitude:</Text>
-//       <TextInput
-//         style={styles.input}
-//         value={coordinates.latitude}
-//         onChangeText={(value) => setCoordinates({ ...coordinates, latitude: value })}
-//         placeholder="Enter latitude"
-//         keyboardType="numeric"
-//       />
-
-//       <Text style={styles.label}>Longitude:</Text>
-//       <TextInput
-//         style={styles.input}
-//         value={coordinates.longitude}
-//         onChangeText={(value) => setCoordinates({ ...coordinates, longitude: value })}
-//         placeholder="Enter longitude"
-//         keyboardType="numeric"
-//       />
-
-//       <Text style={styles.label}>Schedule:</Text>
-//       {schedule.map((entry, index) => (
-//         <View key={index} style={styles.scheduleContainer}>
-//           <Picker
-//             selectedValue={entry.day}
-//             onValueChange={(value) => handleScheduleChange(index, "day", value)}
-//             style={styles.picker}
-//           >
-//             <Picker.Item label="Monday" value="Monday" />
-//             <Picker.Item label="Tuesday" value="Tuesday" />
-//             <Picker.Item label="Wednesday" value="Wednesday" />
-//             <Picker.Item label="Thursday" value="Thursday" />
-//             <Picker.Item label="Friday" value="Friday" />
-//             <Picker.Item label="Saturday" value="Saturday" />
-//             <Picker.Item label="Sunday" value="Sunday" />
-//           </Picker>
-
-//           <TextInput
-//             style={styles.input}
-//             value={entry.time}
-//             onChangeText={(value) => handleScheduleChange(index, "time", value)}
-//             placeholder="Enter time (e.g., 09:00 AM)"
-//           />
-//         </View>
-//       ))}
-
-//       <Button title="Add Schedule" onPress={addSchedule} />
-//       <View style={styles.submitButton}>
-//         <Button title="Create Subject" onPress={handleSubmit} />
-//       </View>
-//     </ScrollView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     padding: 20,
-//   },
-//   label: {
-//     fontSize: 16,
-//     fontWeight: "bold",
-//     marginBottom: 8,
-//   },
-//   input: {
-//     borderWidth: 1,
-//     borderColor: "#ccc",
-//     padding: 10,
-//     marginBottom: 16,
-//     borderRadius: 5,
-//   },
-//   scheduleContainer: {
-//     marginBottom: 16,
-//     padding: 10,
-//     borderWidth: 1,
-//     borderColor: "#ccc",
-//     borderRadius: 5,
-//   },
-//   picker: {
-//     marginBottom: 16,
-//     height: 50,
-//   },
-//   submitButton: {
-//     marginTop: 20,
-//   },
-// });
-
-// export default SubjectForm;
-
-
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, Button } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+  const distance = R * c;
+  return distance; // in meters
+}
 
 export default function Ride() {
-  // State for user input
-  const [currentLocation, setCurrentLocation] = useState('');
-  const [destination, setDestination] = useState('');
+  const [currentLocation, setCurrentLocation] = useState(null); // Blue marker
+  const [locationSubscription, setLocationSubscription] = useState(null);
 
-  // Placeholder ML-based states
+  const [destinationCoord, setDestinationCoord] = useState(null); // Red marker
+
+  // Text fields
+  const [currentLocationInput, setCurrentLocationInput] = useState('');
+  const [destinationInput, setDestinationInput] = useState('');
+
+  // Example placeholders
   const [potholePrediction, setPotholePrediction] = useState('High');
   const [predictiveCollision, setPredictiveCollision] = useState('5%');
   const [fatigueLevel, setFatigueLevel] = useState('Low');
   const [collisionProbability, setCollisionProbability] = useState('5%');
 
-  // Ride summary placeholders
   const [distance, setDistance] = useState(2023);
   const [avgSpeed, setAvgSpeed] = useState(15);
 
-  // Example map initial region (Miami):
-  const initialRegion = {
-    latitude: 25.7617,
-    longitude: -80.1918,
-    latitudeDelta: 0.0922,  // Zoom levels
-    longitudeDelta: 0.0421,
+  const [mapRegion, setMapRegion] = useState({
+    latitude: 20.5937,
+    longitude: 78.9629,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  });
+
+  // Route
+  const [routeCoords, setRouteCoords] = useState([]);
+  
+  // Potholes that lie on the route
+  const [potholesOnRoute, setPotholesOnRoute] = useState([]); 
+
+  // 1) Request location & track user
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to show your current location.'
+        );
+        return;
+      }
+
+      const sub = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 1,
+        },
+        (loc) => {
+          const { latitude, longitude } = loc.coords;
+          setCurrentLocation({ latitude, longitude });
+          setCurrentLocationInput(
+            `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`
+          );
+        }
+      );
+      setLocationSubscription(sub);
+    })();
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, []);
+
+  // Tapping the map -> set red marker
+  const handleMapPress = (e) => {
+    const { latitude, longitude } = e.nativeEvent.coordinate;
+    setDestinationCoord({ latitude, longitude });
+  };
+
+  // 2) Fetch route & detect potholes
+  const handleSetDestination = async () => {
+    if (!destinationCoord) {
+      Alert.alert('No Destination', 'Please tap the map to place the red marker first.');
+      return;
+    }
+    setDestinationInput(
+      `Lat: ${destinationCoord.latitude.toFixed(4)}, Lng: ${destinationCoord.longitude.toFixed(4)}`
+    );
+
+    if (!currentLocation) {
+      Alert.alert('No Current Location', 'We do not have your current location yet.');
+      return;
+    }
+
+    try {
+      const ORS_API_KEY = '5b3ce3597851110001cf62481d7f7e0470d341efa47b5e7ddc6eadf7';
+
+      const start = `${currentLocation.longitude},${currentLocation.latitude}`;
+      const end = `${destinationCoord.longitude},${destinationCoord.latitude}`;
+      const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start}&end=${end}`;
+      
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!data.features || !data.features[0]) {
+        Alert.alert('Route Error', 'No route found by ORS.');
+        return;
+      }
+
+      const route = data.features[0].geometry.coordinates; // [lon, lat]
+      const polylineCoords = route.map(([lon, lat]) => ({
+        latitude: lat,
+        longitude: lon,
+      }));
+      setRouteCoords(polylineCoords);
+
+      // === DETECT POTHOLES ON ROUTE ===
+      // We'll do a simple "closest route coordinate" check
+      const threshold = 30; // meters
+      const found = [];
+
+      POTHOLES_DB.forEach((pothole) => {
+        let isOnRoute = false;
+        for (let i = 0; i < polylineCoords.length; i++) {
+          const dist = getDistanceLatLng(
+            pothole.latitude,
+            pothole.longitude,
+            polylineCoords[i].latitude,
+            polylineCoords[i].longitude
+          );
+          if (dist < threshold) {
+            // This pothole is "close enough"
+            isOnRoute = true;
+            break;
+          }
+        }
+        if (isOnRoute) {
+          found.push(pothole);
+        }
+      });
+
+      setPotholesOnRoute(found);
+
+      Alert.alert(
+        'Directions Loaded',
+        `Route displayed! Found ${found.length} pothole(s) on this path.`
+      );
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Error', 'Could not fetch route from OpenRouteService.');
+    }
   };
 
   const handleStartRide = () => {
-    // TODO: Implement "start ride" logic, integration with ML, etc.
-    alert('Ride Started!');
+    Alert.alert('Ride Started', 'Ride logic/integration goes here!');
   };
+
+  if (!currentLocation) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text>Fetching your current location...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      
-      {/* Top Title */}
+      {/* Title */}
       <Text style={styles.title}>Ride</Text>
 
       {/* Current Location */}
       <Text style={styles.label}>Current Location:</Text>
       <TextInput
         style={styles.input}
-        value={currentLocation}
-        onChangeText={setCurrentLocation}
+        value={currentLocationInput}
+        onChangeText={setCurrentLocationInput}
         placeholder="Enter your current location"
       />
 
@@ -195,19 +218,65 @@ export default function Ride() {
       <Text style={styles.label}>Destination:</Text>
       <TextInput
         style={styles.input}
-        value={destination}
-        onChangeText={setDestination}
-        placeholder="Enter your destination"
+        value={destinationInput}
+        onChangeText={setDestinationInput}
+        placeholder="Tap the map, then click 'Set Destination Marker'"
       />
 
-      {/* MAP Section */}
-      <MapView style={styles.map} initialRegion={initialRegion}>
-        {/* Example Marker at "center" (Miami) */}
-        <Marker coordinate={{ latitude: 25.7617, longitude: -80.1918 }} />
+      <Button title="Set Destination Marker" onPress={handleSetDestination} />
+
+      <MapView
+        style={styles.map}
+        region={mapRegion}
+        onRegionChangeComplete={(reg) => setMapRegion(reg)}
+        onPress={handleMapPress}
+      >
+        {/* OSM tiles */}
+        <UrlTile urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+        {/* Blue marker for user */}
+        <Marker
+          coordinate={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          }}
+          pinColor="blue"
+          title="You are here"
+        />
+
+        {/* Red marker for destination */}
+        {destinationCoord && (
+          <Marker
+            coordinate={destinationCoord}
+            pinColor="red"
+            title="Destination"
+          />
+        )}
+
+        {/* Polyline for route */}
+        {routeCoords.length > 0 && (
+          <Polyline
+            coordinates={routeCoords}
+            strokeColor="#ff0000"
+            strokeWidth={3}
+          />
+        )}
+
+        {/* Markers for potholes on route */}
+        {potholesOnRoute.map((p) => (
+          <Marker
+            key={p.id}
+            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+            title={`Pothole #${p.id}`}
+            // Optionally use an icon
+            // icon={require('../assets/pothole-icon.png')} // If you have a local image
+            pinColor="orange"
+          />
+        ))}
       </MapView>
 
       {/* Route Status */}
-      <View style={styles.routeStatusContainer}>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Route Status</Text>
         <Text>Pothole Prediction: {potholePrediction}</Text>
         <Text>Predictive Collision Risk: {predictiveCollision}</Text>
@@ -215,14 +284,14 @@ export default function Ride() {
         <Text>Collision Probability: {collisionProbability}</Text>
       </View>
 
-      {/* Start Button */}
-      <View style={styles.startContainer}>
+      {/* Start Ride */}
+      <View style={styles.section}>
         <Text>Fastest route now (3.6 mi), approx 18 min</Text>
-        <Button title="Start" onPress={handleStartRide} />
+        <Button title="Start Ride" onPress={handleStartRide} />
       </View>
 
       {/* Ride Summary */}
-      <View style={styles.rideSummaryContainer}>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Ride Summary</Text>
         <View style={styles.row}>
           <Text>Distance: {distance}</Text>
@@ -233,22 +302,28 @@ export default function Ride() {
   );
 }
 
-// Example styling
+// ---------------------------------
+// STYLES
+// ---------------------------------
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
-    padding: 16,
+    flex: 1,
     backgroundColor: '#fff',
+    padding: 16,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 20, 
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
   },
   label: {
     fontSize: 14,
-    marginTop: 8,
     marginBottom: 4,
+    marginTop: 8,
   },
   input: {
     borderColor: '#ccc',
@@ -261,21 +336,15 @@ const styles = StyleSheet.create({
   },
   map: {
     width: '100%',
-    height: 200,
-    marginBottom: 16,
+    height: 300,
+    marginVertical: 12,
   },
-  routeStatusContainer: {
+  section: {
     marginBottom: 16,
   },
   sectionTitle: {
     fontWeight: 'bold',
     marginBottom: 4,
-  },
-  startContainer: {
-    marginBottom: 16,
-  },
-  rideSummaryContainer: {
-    marginTop: 8,
   },
   row: {
     flexDirection: 'row',

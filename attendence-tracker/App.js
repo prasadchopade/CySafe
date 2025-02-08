@@ -1,6 +1,19 @@
 import { useEffect } from "react";
 import { registerForPushNotificationsAsync, configureNotifications } from "./utils/notificationUtils";
 import { Slot } from "expo-router";
+import { ThemeProvider } from "@rneui/themed";
+import * as Notifications from "expo-notifications"; // Ensure this is imported
+
+import '@tensorflow/tfjs-react-native'; 
+import * as tf from '@tensorflow/tfjs';
+
+useEffect(() => {
+  // This loads the native TF runtime
+  tf.ready().then(() => {
+    console.log('TF is ready');
+  });
+}, []);
+
 
 export default function App() {
   useEffect(() => {
@@ -20,5 +33,9 @@ export default function App() {
     return () => subscription.remove();
   }, []);
 
-  return <Slot />;
+  return (
+    <ThemeProvider>
+      <Slot />
+    </ThemeProvider>
+  );
 }
