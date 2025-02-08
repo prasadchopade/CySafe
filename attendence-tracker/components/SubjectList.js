@@ -1,64 +1,104 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Button, ActivityIndicator } from 'react-native';
-import axios from 'axios';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const SubjectList = () => {
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      try {
-        const response = await axios.get(`http://10.10.61.7:5000/api/subjects`);
-        setSubjects(response.data);
-        console.log("Subjects fetched:", response.data);
-      } catch (error) {
-        console.error("Error fetching subjects:", error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubjects();
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading subjects...</Text>
-      </View>
-    );
-  }
+  const navigationItems = [
+    {
+      id: '1',
+      title: 'Rides',
+      icon: 'directions-car',
+      route: '/subject-form'
+    },
+    {
+      id: '2',
+      title: 'Profile',
+      icon: 'person',
+      route: '/profile'
+    },
+    {
+      id: '3',
+      title: 'Leaderboard',
+      icon: 'leaderboard',
+      route: '/leaderboard'
+    },
+    {
+      id: '4',
+      title: 'Settings',
+      icon: 'settings',
+      route: '/settings'
+    }
+  ];
 
   return (
-    <FlatList
-      data={subjects}
-      keyExtractor={(item) => item._id}
-      renderItem={({ item }) => (
-        <View style={styles.item}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text>Location: {item.locationName}</Text>
-          <Button
-            title="View Attendance"
-            onPress={() =>
-              router.push(
-                `/attendance?subjectId=${item._id}`
-              )
-            }
-          />
-        </View>
-      )}
-    />
+    <LinearGradient
+      colors={['#B4E1DC', '#E7D5C4']}
+      style={styles.container}
+    >
+      <Text style={styles.greeting}>CySpace</Text>
+      <View style={styles.grid}>
+        {navigationItems.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.box}
+            onPress={() => router.push(item.route)}
+          >
+            <MaterialIcons name={item.icon} size={40} color="#333" />
+            <Text style={styles.boxText}>{item.title}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  item: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#ccc' },
-  name: { fontWeight: 'bold', fontSize: 18 },
-  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  greeting: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#000',
+    textAlign: 'center',
+    marginTop: 60,
+    lineHeight: 40,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  box: {
+    width: '45%',
+    aspectRatio: 1,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    margin: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  boxText: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
 });
 
 export default SubjectList;
